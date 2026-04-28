@@ -5,3 +5,9 @@ __pycache__/
 *.pyc
 .vscode/
 *.egg-info/
+
+# Operator-recorded calibration poses (not config — runtime data).
+config/calibration_poses.yaml
+
+# Staged marker JPGs.
+data/

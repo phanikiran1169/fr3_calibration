@@ -31,6 +31,8 @@ setup(
     entry_points={
         'console_scripts': [
             'make_marker = fr3_calibration.make_marker:main',
+            'calibration_pose_recorder = fr3_calibration.calibration_pose_recorder:main',
+            'calibration_pose_runner = fr3_calibration.calibration_pose_runner:main',
         ],
     },
 )

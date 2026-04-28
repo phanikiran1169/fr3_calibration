@@ -9,8 +9,11 @@ ROS 2 package for hand-eye calibration on the Franka FR3. Wires `realsense2_came
 | `config/marker.yaml` | ArUco marker geometry (id, size) — single source of truth |
 | `config/calibration.yaml` | Frames, topics, calibration name |
 | `launch/eye_in_hand.launch.py` | Bring up RealSense + aruco_ros/single + easy_handeye2 |
+| `launch/move_group.launch.py` | Inference-PC `move_group` for the runner (no controllers) |
 | `launch/publish_calibration.launch.py` | Publish a saved calibration as a static TF |
 | `fr3_calibration/make_marker.py` | Stage a printable ArUco marker JPG |
+| `fr3_calibration/calibration_pose_recorder.py` | Capture FR3 joint configurations to YAML |
+| `fr3_calibration/calibration_pose_runner.py` | Drive FR3 through recorded poses for sampling |
 
 ## Frames
 
@@ -47,7 +50,7 @@ source install/setup.bash
 
 ```bash
 ros2 run fr3_calibration make_marker
-# Copies the prebuilt JPG to ~/thesis/data/calib/marker.jpg
+# Copies the prebuilt JPG to <package>/data/marker.jpg
 ```
 
 Print at 100% / "actual size" — disable any "fit to page" or "scale to printable area" option. The shipped JPG carries embedded DPI metadata that yields a 5 cm marker only at 100% scale; "fit to page" can produce a 4-7 cm marker depending on paper size (Letter vs A4) and printer margins. Print one, measure the black square's side with calipers, and update `config/marker.yaml` (`marker_size_m`) to the measured value before calibrating.
@@ -84,6 +87,39 @@ ros2 launch fr3_calibration eye_in_hand.launch.py \
 
 Edit `config/marker.yaml` for persistent changes (it's the single source of truth for marker geometry).
 
+## Automated calibration (record + replay)
+
+The manual flow above requires the operator to drive the FR3 to ~15 poses by hand and click "Take Sample" in the GUI at each. For repeated calibrations, two helper scripts split the work into a one-time pose-recording step and a fast replay step.
+
+### Record a pose list
+
+Drive the arm to each desired calibration pose (Programming-mode hand-guide, teleop, or any other input). Press Enter to capture; the script reads `/joint_states` and appends to a YAML.
+
+```bash
+ros2 run fr3_calibration calibration_pose_recorder
+```
+
+The default output is `config/calibration_poses.yaml` in the package source tree (gitignored). If the file already exists, the script aborts; pass `--append` to add more poses or `--overwrite` to replace.
+
+### Replay the pose list
+
+The runner drives the FR3 through the recorded poses via `pymoveit2`. At each pose it pauses and waits for the operator to click "Take Sample" in the easy_handeye2 GUI, then press Enter to continue.
+
+Three terminals on the inference PC (in addition to `franka_bringup` on the RT PC and `fr3_arm_controller` spawned per `fr3_teleop`):
+
+```bash
+# Terminal 1: easy_handeye2 GUI + RealSense + aruco
+ros2 launch fr3_calibration eye_in_hand.launch.py
+
+# Terminal 2: move_group (planner only — no controllers, those run on the RT PC)
+ros2 launch fr3_calibration move_group.launch.py
+
+# Terminal 3: drive through the recorded poses
+ros2 run fr3_calibration calibration_pose_runner
+```
+
+The runner moves at 10 % velocity scaling by default; pass `--vel-scale 0.2` to speed up once the pose list is known good. The operator holds the EAD throughout. Compute and save are also clicked in the GUI after the last pose.
+
 ## Publish the saved calibration
 
 ```bash
@@ -98,3 +134,5 @@ Add this to the daily startup so downstream code (e.g., `fr3_data_collection`) s
 - `aruco_ros` (source-built from pal-robotics/aruco_ros humble-devel)
 - `easy_handeye2` (source-built)
 - `rqt_image_view` (apt: `ros-humble-rqt-image-view`)
+- `pymoveit2` (apt: `ros-humble-pymoveit2`) — for `calibration_pose_runner`
+- `franka_fr3_moveit_config` (source-built from franka_ros2 v0.1.15) — for `move_group.launch.py`

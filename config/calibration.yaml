@@ -1,0 +1,25 @@
+# calibration.yaml
+# fr3_calibration: paths, frames, and topics for the eye-in-hand calibration.
+# Override individual values via launch arguments if needed.
+#
+# Marker geometry (id, size) lives in marker.yaml — single source of truth.
+# Marker storage path is hardcoded by easy_handeye2 to ~/.ros2/easy_handeye2/
+# and symlinked to ~/thesis/data/calib/easy_handeye2/ (see README).
+
+calibration:
+  name: fr3_eye_in_hand               # easy_handeye2 calibration name (output filename)
+
+robot:
+  base_frame: fr3_link0
+  effector_frame: fr3_link8           # matches fr3_teleop/config/servo_config.yaml
+
+camera:
+  # Topics published when rs_launch.py runs with camera_namespace='/' and
+  # camera_name='camera' (the launch file overrides the rs_launch defaults
+  # to compose /camera/... instead of /camera/camera/...).
+  image_topic: /camera/color/image_raw
+  info_topic: /camera/color/camera_info
+  optical_frame: camera_color_optical_frame
+
+aruco:
+  marker_frame: aruco_marker_frame    # TF child frame published by aruco_ros/single

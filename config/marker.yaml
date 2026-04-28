@@ -1,0 +1,13 @@
+# marker.yaml
+# fr3_calibration: ArUco marker geometry. Used by aruco_ros/single during
+# calibration and by the marker generator.
+#
+# After printing, measure the marker side with calipers and update
+# marker_size_m to the actual value.
+#
+# aruco_ros uses the legacy aruco library (not cv2.aruco). Its dictionary is
+# compile-time fixed to ARUCO_MIP_36h12; no runtime parameter is exposed.
+
+aruco:
+  marker_id: 26                 # ArUco ID. aruco_ros ships ready-to-print PNGs for IDs 26 and 582.
+  marker_size_m: 0.050          # marker side length in metres. UPDATE after printing.

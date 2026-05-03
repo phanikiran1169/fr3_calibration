@@ -196,7 +196,7 @@ def main(argv=None):
     )
     default_poses = os.path.join(
         os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-        'config', 'calibration_poses.yaml',
+        'config', 'eye_in_hand_calib_poses.yaml',
     )
     parser.add_argument('--poses', default=default_poses,
                         help=f'Poses YAML path (default: {default_poses})')

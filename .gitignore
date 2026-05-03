@@ -7,7 +7,8 @@ __pycache__/
 *.egg-info/
 
 # Operator-recorded calibration poses (not config — runtime data).
-config/calibration_poses.yaml
+config/eye_in_hand_calib_poses.yaml
+config/eye_to_hand_calib_poses.yaml
 
 # Staged marker JPGs.
 data/

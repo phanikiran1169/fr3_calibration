@@ -20,6 +20,8 @@ setup(
             glob('launch/*.launch.py')),
         (os.path.join('share', package_name, 'config'),
             glob('config/*.yaml')),
+        (os.path.join('share', package_name, 'rviz'),
+            glob('rviz/*.rviz')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -33,6 +35,7 @@ setup(
             'make_marker = fr3_calibration.make_marker:main',
             'calibration_pose_recorder = fr3_calibration.calibration_pose_recorder:main',
             'calibration_pose_runner = fr3_calibration.calibration_pose_runner:main',
+            'calibration_publisher = fr3_calibration.calibration_publisher:main',
         ],
     },
 )

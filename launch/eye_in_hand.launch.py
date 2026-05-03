@@ -1,19 +1,13 @@
 # eye_in_hand.launch.py
-# fr3_calibration: brings up the full eye-in-hand calibration session.
-# Wires together: realsense2_camera (RGB-D + camera_info), aruco_ros/single
-# (marker detection + TF broadcast), and easy_handeye2 (sampling + solving).
-#
-# The camera is mounted on the FR3 flange. The ArUco marker is fixed in the
-# workspace (taped to a rigid board on the table; must not move during the
-# session).
+# Eye-in-hand calibration session: realsense2_camera (wrist) + aruco_ros/single
+# (marker detection) + easy_handeye2 (sampling and solving). The marker is
+# fixed in the workspace; the camera is mounted on the FR3 flange.
 #
 # Frames (defaults from config/calibration.yaml):
 #   robot_base_frame:      fr3_link0
 #   robot_effector_frame:  fr3_link8
-#   tracking_base_frame:   camera_color_optical_frame
-#   tracking_marker_frame: aruco_marker_frame  (broadcast by aruco_ros/single)
-#
-# Marker geometry is read from config/marker.yaml (single source of truth).
+#   tracking_base_frame:   wrist_camera_color_optical_frame
+#   tracking_marker_frame: aruco_marker_frame
 
 import os
 import yaml
@@ -54,11 +48,15 @@ def generate_launch_description():
                     '(read from config/marker.yaml; update there after measuring)',
     )
 
-    # 1. RealSense camera
-    # rs_launch.py defaults camera_namespace='camera' AND camera_name='camera',
-    # which composes topics as /camera/camera/... . We override camera_namespace
-    # to '/' so topics come out as /camera/color/image_raw — matching what
-    # fr3_data_collection/config/record_config.yaml expects.
+    # camera_namespace='/' makes topics /wrist_camera/... instead of
+    # /wrist_camera/wrist_camera/... . serial_no pins this launch to the
+    # wrist camera. The leading underscore forces string parsing of the
+    # serial; numeric serials with leading zeros are otherwise rejected.
+    serial_arg = DeclareLaunchArgument(
+        'serial_no',
+        default_value='_020522070946',
+        description='RealSense serial number for the wrist camera.',
+    )
     realsense_share = get_package_share_directory('realsense2_camera')
     realsense_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -66,25 +64,19 @@ def generate_launch_description():
         ),
         launch_arguments={
             'camera_namespace': '/',
-            'camera_name': 'camera',
+            'camera_name': 'wrist_camera',
+            'serial_no': LaunchConfiguration('serial_no'),
             'align_depth.enable': 'true',
             'pointcloud.enable': 'true',
             'enable_sync': 'true',
         }.items(),
     )
 
-    # 2. aruco_ros/single — detects the marker and broadcasts a TF
-    #    parent = camera_frame (or reference_frame if non-empty)
-    #    child  = marker_frame
-    #
-    #    aruco_ros/launch/single.launch.py is hardcoded for stereo cameras,
-    #    so we instantiate the node directly here with our remaps.
-    #
-    #    image_is_rectified=True tells aruco_ros to use CameraInfo.P with zero
-    #    distortion. RealSense color is generally published with distortion
-    #    already applied to the image, but verify on first run by checking that
-    #    /camera/color/camera_info has D = [0, 0, 0, 0, 0]. If D is non-zero,
-    #    either set image_is_rectified=False or switch to a rectified topic.
+    # aruco_ros/single detects the marker and broadcasts the marker pose as
+    # a TF (parent = camera_frame, child = marker_frame). The shipped
+    # single.launch.py is hardcoded for stereo, so the node is instantiated
+    # directly with our remaps. image_is_rectified=True is valid only if
+    # CameraInfo.D is zeros for the published color stream.
     aruco_single = Node(
         package='aruco_ros',
         executable='single',
@@ -94,9 +86,9 @@ def generate_launch_description():
             'image_is_rectified': True,
             'marker_size': LaunchConfiguration('marker_size'),
             'marker_id': LaunchConfiguration('marker_id'),
-            # reference_frame and camera_frame are intentionally identical — this
-            # makes aruco_ros skip the camera→reference TF lookup and broadcast
-            # the marker pose directly in the camera optical frame.
+            # Identical reference_frame and camera_frame skip the
+            # camera->reference TF lookup; the marker pose is broadcast
+            # directly in the camera optical frame.
             'reference_frame': calib_cfg['camera']['optical_frame'],
             'camera_frame': calib_cfg['camera']['optical_frame'],
             'marker_frame': calib_cfg['aruco']['marker_frame'],
@@ -107,14 +99,9 @@ def generate_launch_description():
         ],
     )
 
-    # 3. rqt_image_view — shows the marker-detection overlay AND keeps aruco_ros awake.
-    #    aruco_ros/single early-returns from its image callback when no subscriber exists
-    #    on its non-TF output topics (pose, transform, marker, pixel, position, debug,
-    #    image). Without a subscriber it never runs detection, never broadcasts TF, and
-    #    easy_handeye2 reports "tracking system base/marker frames not connected".
-    #    rqt_image_view subscribes to /aruco_single/result, which keeps the callback
-    #    active. The window also doubles as live feedback that the marker is being
-    #    detected before clicking "Take Sample".
+    # rqt_image_view shows the detection overlay and keeps aruco_ros active:
+    # aruco_ros/single skips detection when no subscriber exists on its
+    # non-TF output topics, so without a viewer no marker TF is broadcast.
     aruco_viewer = Node(
         package='rqt_image_view',
         executable='rqt_image_view',
@@ -123,7 +110,7 @@ def generate_launch_description():
         output='screen',
     )
 
-    # 4. easy_handeye2 — samples robot and tracking TFs, solves AX=XB
+    # easy_handeye2 samples robot and tracking TFs and solves AX=XB.
     easy_handeye2_share = get_package_share_directory('easy_handeye2')
     easy_handeye2_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -143,6 +130,7 @@ def generate_launch_description():
         calib_name_arg,
         marker_id_arg,
         marker_size_arg,
+        serial_arg,
         realsense_launch,
         aruco_single,
         aruco_viewer,

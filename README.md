@@ -23,17 +23,17 @@ Configured in `config/calibration.yaml` to match `fr3_teleop/config/servo_config
 |------|-------|
 | `robot_base_frame` | `fr3_link0` |
 | `robot_effector_frame` | `fr3_link8` |
-| `tracking_base_frame` (camera optical) | `camera_color_optical_frame` |
+| `tracking_base_frame` (camera optical) | `wrist_camera_color_optical_frame` |
 | `tracking_marker_frame` | `aruco_marker_frame` (broadcast by `aruco_ros/single`) |
 
 ## Output
 
-`easy_handeye2` saves calibrations to `~/.ros2/easy_handeye2/calibrations/<name>.calib` (hardcoded in the package). For this project the path is symlinked to `~/thesis/data/calib/easy_handeye2/calibrations/`:
+`easy_handeye2` writes calibrations to `~/.ros2/easy_handeye2/calibrations/<name>.calib` (hardcoded in the package). `~/.ros2/easy_handeye2` is symlinked to `<package>/data/easy_handeye2/` so calibrations are stored under the package:
 
 ```bash
-mkdir -p ~/thesis/data/calib/easy_handeye2/calibrations
+mkdir -p ~/franka_ws/src/fr3_calibration/data/easy_handeye2/calibrations
 mkdir -p ~/.ros2
-ln -s ~/thesis/data/calib/easy_handeye2 ~/.ros2/easy_handeye2
+ln -s ~/franka_ws/src/fr3_calibration/data/easy_handeye2 ~/.ros2/easy_handeye2
 ```
 
 ## Build
@@ -73,7 +73,7 @@ ros2 launch fr3_calibration eye_in_hand.launch.py
 
 This starts the RealSense, runs `aruco_ros/single` against the camera stream, launches `easy_handeye2`'s rqt calibrator, and opens an `rqt_image_view` window on `/aruco_single/result`. The image window doubles as live detection feedback and is also required: `aruco_ros/single` only runs detection while at least one subscriber exists on its non-TF output topics, so removing the viewer means no TF is broadcast and `easy_handeye2` cannot sample. The marker must be in the camera's FOV.
 
-In the rqt calibrator UI: kinesthetically move the FR3 to ≥15 diverse poses (large rotations on each axis), click "take sample" at each, then "compute" and "save". The result lands at `~/thesis/data/calib/easy_handeye2/calibrations/fr3_eye_in_hand.calib`.
+In the rqt calibrator UI: kinesthetically move the FR3 to ≥15 diverse poses (large rotations on each axis), click "take sample" at each, then "compute" and "save". The result lands at `~/franka_ws/src/fr3_calibration/data/easy_handeye2/calibrations/fr3_eye_in_hand.calib`.
 
 The RT PC and laptop must agree on wall time within a few milliseconds; otherwise `easy_handeye2` fails with `Lookup would require extrapolation into the past`. Use any standard ROS 2 multi-machine NTP setup.
 
@@ -99,7 +99,7 @@ Drive the arm to each desired calibration pose (Programming-mode hand-guide, tel
 ros2 run fr3_calibration calibration_pose_recorder
 ```
 
-The default output is `config/calibration_poses.yaml` in the package source tree (gitignored). If the file already exists, the script aborts; pass `--append` to add more poses or `--overwrite` to replace.
+The default output is `config/eye_in_hand_calib_poses.yaml` in the package source tree. If the file already exists, the script aborts; pass `--append` to add more poses or `--overwrite` to replace. For eye-to-hand, override with `--out config/eye_to_hand_calib_poses.yaml` (and pass the same to the runner via `--poses`).
 
 ### Replay the pose list
 

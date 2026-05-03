@@ -1,5 +1,6 @@
-# calibration_pose_recorder.py: Capture FR3 joint configurations to a YAML
-# file for later replay by calibration_pose_runner during eye-in-hand calibration.
+# calibration_pose_recorder.py
+# Captures FR3 joint configurations to YAML for replay by
+# calibration_pose_runner.
 
 import argparse
 import os
@@ -104,7 +105,7 @@ def main(argv=None):
     # in the README). Pass --out explicitly if you build without symlinks.
     default_out = os.path.join(
         os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-        'config', 'calibration_poses.yaml',
+        'config', 'eye_in_hand_calib_poses.yaml',
     )
     parser.add_argument('--out', default=default_out,
                         help=f'Output YAML path (default: {default_out})')

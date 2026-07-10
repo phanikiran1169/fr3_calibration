@@ -1,13 +1,16 @@
 # calibration_eye_to_hand.yaml
 # Eye-to-hand (front camera) frames, topics, and calibration name. Marker
-# geometry is in marker.yaml. The marker is rigidly attached to fr3_link7.
+# geometry is in marker.yaml. The marker is rigidly attached to a fixture
+# bolted to the flange (fr3_link8). Gripper width must stay fixed during
+# the calibration session, otherwise the marker-to-effector transform is
+# not constant and AX=XB is contaminated.
 
 calibration:
   name: fr3_eye_to_hand               # easy_handeye2 calibration name (output filename)
 
 robot:
   base_frame: fr3_link0
-  effector_frame: fr3_link7           # marker is attached here
+  effector_frame: fr3_link8           # marker is rigidly attached to a fixture on the flange
 
 camera:
   image_topic: /front_camera/color/image_raw

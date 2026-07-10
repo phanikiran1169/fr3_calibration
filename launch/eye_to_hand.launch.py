@@ -1,12 +1,13 @@
 # eye_to_hand.launch.py
 # Eye-to-hand calibration session: realsense2_camera (front, fixed) +
 # aruco_ros/single (marker detection) + easy_handeye2 (sampling and solving).
-# The marker is rigidly attached to fr3_link7; the front camera must be
-# fixed in the workspace for the duration of the session.
+# The marker is rigidly attached to a fixture bolted to the flange (fr3_link8);
+# the front camera must be fixed in the workspace for the duration of the
+# session, and gripper width must not change during sampling.
 #
 # Frames (defaults from config/calibration_eye_to_hand.yaml):
 #   robot_base_frame:      fr3_link0
-#   robot_effector_frame:  fr3_link7
+#   robot_effector_frame:  fr3_link8
 #   tracking_base_frame:   front_camera_color_optical_frame
 #   tracking_marker_frame: aruco_marker_frame
 
